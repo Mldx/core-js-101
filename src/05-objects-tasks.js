@@ -116,35 +116,87 @@ function fromJSON(proto, json) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  selector: '',
+
+  element(value) {
+    const obj = Object.create(this);
+    obj.selector = this.selector + value;
+    this.checkCountSelector(obj, 'element');
+    this.checkOrder(obj, 1);
+    return obj;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}#${value}`;
+    this.checkCountSelector(obj, 'id');
+    this.checkOrder(obj, 2);
+    return obj;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}.${value}`;
+    this.checkOrder(obj, 3);
+    return obj;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}[${value}]`;
+    this.checkOrder(obj, 4);
+    return obj;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}:${value}`;
+    this.checkOrder(obj, 5);
+    return obj;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    const obj = Object.create(this);
+    obj.selector = `${this.selector}::${value}`;
+    this.checkCountSelector(obj, 'pseudoElement');
+    this.checkOrder(obj, 6);
+    return obj;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    this.selector = `${selector1.selector} ${combinator} ${selector2.selector}`;
+    return this;
+  },
+
+  stringify() {
+    const temp = this.selector;
+    this.selector = '';
+    return temp;
+  },
+
+  checkOrder(obj, orderNumber) {
+    const objCopy = obj;
+    if (!objCopy.order) {
+      objCopy.order = [orderNumber];
+    } else if (objCopy.order[objCopy.order.length - 1] <= orderNumber) {
+      objCopy.order.push(orderNumber);
+    } else {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+  },
+  checkCountSelector(obj, selector) {
+    const objCopy = obj;
+    objCopy.checkSelector = obj.checkSelector
+      ? obj.checkSelector
+      : {};
+    objCopy.checkSelector[selector] = obj.checkSelector[selector]
+      ? objCopy.checkSelector[selector] += 1
+      : objCopy.checkSelector[selector] = 1;
+    if (Object.values(obj.checkSelector).indexOf(2) !== -1) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
   },
 };
-
 
 module.exports = {
   Rectangle,
